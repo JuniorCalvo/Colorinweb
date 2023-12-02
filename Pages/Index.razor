@@ -1,0 +1,161 @@
+﻿@page "/"
+@using Colorinweb.Models;
+@using Colorinweb.Servicio;
+
+
+<PageTitle>Index</PageTitle>
+
+<h1>Colores!</h1>
+
+@foreach (var color in inputs)
+{
+    int index = inputs.IndexOf(color);
+
+    if (index % 5 == 0 && index != 0)
+    {
+        <hr />
+    }
+
+    <input style="margin: 5px" class="@Clasecss(color.valor)" @bind="color.valor" @oninput="contar" />
+}
+
+<div>
+    Rojo: @rojo
+    Verde: @verde
+    Azul: @azul
+</div>
+
+<button @onclick="Guardar">Guardar</button>
+<button @onclick="MostrarUltimoJson">Mostrar </button>
+
+@code {
+    int rojo, verde, azul;
+
+    string EstiloNombre() => "mi-nombre-estilo";
+
+    class Objx
+    {
+        public string valor = "";
+    }
+
+    List<Objx> inputs = new List<Objx>();
+
+    string folderPath = "datax";
+    ColorService colorService = new ColorService();
+
+    void contar()
+    {
+        rojo = 0;
+        verde = 0;
+        azul = 0;
+
+        foreach (var color in inputs)
+        {
+            color.valor = color.valor.ToLower().Trim();
+            if (color.valor == "rojo")
+            {
+                rojo++;
+            }
+            if (color.valor == "verde")
+            {
+                verde++;
+            }
+            if (color.valor == "azul")
+            {
+                azul++;
+            }
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        for (int i = 0; i < 25; i++)
+        {
+            inputs.Add(new Objx());
+        }
+    }
+
+    void Guardar()
+    {
+        DatosColores datos = new DatosColores
+            {
+                Rojo = rojo,
+                Verde = verde,
+                Azul = azul
+            };
+
+        
+        int fileId = ObtenerUltimoId() + 1;
+
+        string filePath = Path.Combine(folderPath, $"datosColores_{fileId}.json");
+
+       
+        colorService.GuardarDatos(datos, filePath);
+    }
+
+    int ObtenerUltimoId()
+    {
+        DirectoryInfo directory = new DirectoryInfo(folderPath);
+        var lastFile = directory.GetFiles("datosColores_*.json").OrderByDescending(f => f.LastWriteTime).FirstOrDefault();
+
+        if (lastFile != null)
+        {
+            string fileName = Path.GetFileNameWithoutExtension(lastFile.Name);
+            if (int.TryParse(fileName.Split('_')[1], out int lastId))
+            {
+                return lastId;
+            }
+        }
+
+        return 0;
+    }
+
+    void MostrarUltimoJson()
+    {
+        
+        int ultimoId = ObtenerUltimoId();
+
+        string filePath = Path.Combine(folderPath, $"datosColores_{ultimoId}.json");
+
+        
+        DatosColores datos = colorService.CargarDatos(filePath);
+
+        
+        rojo = datos.Rojo;
+        verde = datos.Verde;
+        azul = datos.Azul;
+
+        
+        ActualizarInputs("rojo", datos.Rojo);
+        ActualizarInputs("verde", datos.Verde);
+        ActualizarInputs("azul", datos.Azul);
+    }
+
+    void ActualizarInputs(string color, int cantidad)
+    {
+        for (int i = 0; i < cantidad; i++)
+        {
+            var input = inputs.FirstOrDefault(x => string.IsNullOrEmpty(x.valor));
+            if (input != null)
+            {
+                input.valor = color;
+            }
+        }
+    }
+
+    string Clasecss(string color)
+    {
+        if (color == "rojo") return "text-rojo bg-danger";
+        else if (color == "verde") return "text-verde bg-success";
+        else if (color == "azul") return "text-azul bg-primary";
+        else return "";
+    }
+}
+
+<br />
+<br >
+<br >
+<br />
+
+<!-- Al final del archivo Razor -->
+<p class="@EstiloNombre()">Diohani Junior Calvo</p>
